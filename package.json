@@ -1,0 +1,34 @@
+{
+  "name": "atomminer-core",
+  "version": "1.1.0",
+  "description": "AtomMiner core miner. ",
+  "main": "index.js",
+  "engines": {
+    "node": ">=10"
+  },
+  "scripts": {
+    "test": "jest --coverage && codecov",
+    "docs": "jsdoc2md-treegen"
+  },
+  "author": "AtomMiner Ltd.",
+  "license": "BSD-4-Clause",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/atomminer/atomminer-core.git"
+  },
+  "dependencies": {
+    "chalk": "^4.1.0",
+    "console-stamp": "^0.2.9",
+    "stratum-client": "file:../modules/stratum-client",
+    "udp-discovery": "github:atomminer/udp-discovery"
+  },
+  "devDependencies": {},
+  "jest": {
+    "collectCoverage": true,
+    "coverageReporters": [
+      "json",
+      "html",
+      "text"
+    ]
+  }
+}

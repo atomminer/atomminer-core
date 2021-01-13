@@ -1,0 +1,14 @@
+{
+	"output": "docs",
+	"cleanOutput": true,
+	"input": "src/**/*.js",
+	"index": "README.md",
+	"indexTemplate": "template/index.hbs",
+	"moduleTemplate": "template/module.hbs",
+	"namepaths": false,
+	"jsdoc2md": {
+		"no-gfm": false,
+		"separators": true,
+		"example-lang": "js"
+	}
+}
