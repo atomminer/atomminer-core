@@ -1,10 +1,8 @@
-const crypto = require('crypto');
 /**
  * Calculate Merkle root and tree helper functions
  * @module mining/crypto/merkle
  */
-
- 
+const crypto = require('crypto'); 
 
 /**
  * Returns single sha256 Merkle root

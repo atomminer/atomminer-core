@@ -91,7 +91,7 @@ const hashToDiff = (hash) => {
  */
 const bitsToDiff = (bits) => {
 	var nb = typeof bits === 'string' ? parseInt(bits, 16) >>> 0 : bits;
-	if(!isFinite(nb) | nb <= 0) return 0;
+	if(!isFinite(nb) || nb <= 0) return 0;
 	var shift = (nb >>> 24) & 0xff;
 	var d = 0x0000ffff / (nb & 0x00ffffff);
 	while(shift < 29) {

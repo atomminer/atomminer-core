@@ -1,6 +1,6 @@
 /**
  * This is pure js version of keccak with no dependencies, as used in keccak(c) coins.
- * Performance of this method is rather sad, however works well for one-tim jobs like verify solution
+ * Performance of this method is rather sad, however works well for one-tim jobs like verify solution/nonce
  * 
  * DO NOT use for mining!
  * 
@@ -37,10 +37,8 @@ const hash = (block) => {
 	const pad = '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
 	var i = 0;
 
-	//const paddeddata = block.length % 2 ? ('0'+block) : block;
 	const paddeddata = block;
 	thedata = paddeddata + pad; //thedata.substr(paddeddata.length);
-	const dlen = paddeddata.length / 2;
 	
 	var buf = Buffer.from(thedata, 'hex');
 	for(i = 0 ; i < 25 ; i++) st.push(buf.readBigUInt64LE(i*8));
