@@ -6,21 +6,20 @@
  * @module mining/miner/lazy-miner
  */
 
-const Miner = require('./miner');
+const EventEmitter = require('events').EventEmitter;
 const keccak = require('../crypto/keccak');
 const hex = require('../../utils/hex');
 const diff = require('../../utils/diff');
 const fmt = require('../../utils/format');
 
 /**
- * Lazy CPU miner implementation. Not the best idea to use it for anything, but testing
+ * Lazy CPU miner implementation plugin. Not the best idea to use it for anything, but testing
  *
  * @class LazyMiner
  * @extends {Miner}
  * @fires solution Miner has found a solution/nonce. Incoming work appended with `minerid: this.id` and `solution: this._nonce`
- * @fires idle Miner has finished mining and idleing
  */
-class LazyMiner extends Miner {
+class LazyMiner extends EventEmitter {
 	constructor() {
 		super();
 		this._idle = true;
@@ -35,11 +34,11 @@ class LazyMiner extends Miner {
 	}
 
 	/** Miner type */
-	get type() { return 'CPU'; }
+	get type() { return 'miner'; }
 	/** Miner has nothing to do */
-	get idle() { return this._idle; }
+	get busy() { return false; }
 	/** Miner is working on the work */
-	get hashing() { return this._hashing; }
+	get working() { return this._hashing; }
 	/** Array of supported algos. All and every */
 	//get algos() { return [/(.*)/]; }
 	get algos() { return [/\b(keccak|keccakc)\b/]; }
@@ -84,8 +83,6 @@ class LazyMiner extends Miner {
 		
 		const h = keccak(this._data.header + hex.hex32(this._nonce));
 		const h64 = Buffer.from(h, 'hex').reverse().readBigUInt64BE(0);
-
-		//if(!(this._nonce % 1000)) console.log(`nonce ${this._nonce}`);
 
 		if(h64 <= this._data.target64) {
 			this._data.solution = this._nonce;

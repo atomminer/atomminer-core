@@ -1,31 +1,37 @@
 
 const PluginTypes = {
 	'pool-provider': require('./pool-provider'),
+	'miner': require('./miner'),
 }
 
 class PluginManager {
 	constructor() {
 		this._plugins = [];
+		this._bus = null;
+	}
+
+	/** Init plugin manager with global even bus */
+	init(bus) {
+		this._bus = bus;
 	}
 
 	/** Register internal plugin */
 	register(plugin) {
-		if(!plugin) return false;
+		if(!plugin) return console.warn(`Failed to register plugin: plugin can't be null`);
 		// must be an object
-		if(typeof plugin !== 'object') return false;
+		if(typeof plugin !== 'object') return console.warn(`Failed to register plugin: plugin must be object`);
 		// must have type declared
-		if(typeof plugin.type !== 'string') return false;   
+		if(typeof plugin.type !== 'string') return console.warn(`Failed to register ${plugin.name || ''} plugin: plugin must declare type`);
 		// type must be known
-		if(Object.keys(PluginTypes).indexOf(plugin.type) == -1) return false;
+		if(Object.keys(PluginTypes).indexOf(plugin.type) == -1) return console.warn(`Failed to register ${plugin.name || ''} plugin: unknown plugin type`);
 		// check plugin if it has all required fn's and properties
 		try {
 			PluginTypes[plugin.type](plugin);	
 		} catch (error) {
-			return false;
+			return console.warn(`Failed to register ${plugin.name || ''} plugin: ${error.message}`);
 		}
 
 		this._plugins.push(plugin)
-		return true;
 	}
 
 	/** Load and register external plugin */

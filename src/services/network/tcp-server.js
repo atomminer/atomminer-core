@@ -12,10 +12,10 @@ const defaultconfigTCP = {
 
 class TCPServer extends EventEmitter {
 	constructor(config) { 
+		super();
 		if(config && typeof config !== 'object') throw new Error('Config object required');
 		this._opts = config ? {...defaultconfigTCP, ...config} : defaultconfigTCP;
 
-		super();
 		this._socket = null;
 		this._running = false;
 

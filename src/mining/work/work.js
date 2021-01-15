@@ -30,7 +30,6 @@ const decodeBlockHeight = (coinbase1) => {
 	var height = 1;
 	try {
 		var buf = Buffer.from(coinbase1, 'hex');
-		var idx = coinbase1.toLowerCase().indexOf('ffff', 32);
 		var pi = 32;
 		while(buf[pi] != 0xff && pi < buf.length) pi++;
 		while(buf[pi] == 0xff && pi < buf.length) pi++;

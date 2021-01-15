@@ -34,8 +34,9 @@ class PoolManager extends EventEmitter{
 	
 	/** Add pool to the list. instance of Transport or config object */
 	addPool(poolOrConf) {
+		if(!poolOrConf) return;
 		var pool = poolOrConf instanceof Transport ? poolOrConf : new Stratum(poolOrConf);
-		if(!pool) return;
+		
 		// TODO: replace all console.log with the internal logger with tags, categories and file logging
 		pool.on('disconnected', () => { this.emit('offline', pool.config.id);})
 		pool.on('online', () => { this.emit('online', pool.config.id); });

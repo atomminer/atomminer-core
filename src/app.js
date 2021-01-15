@@ -5,8 +5,15 @@ const cliargs = require('./cli');
 const fmt = require('./utils/format');
 
 const Config = require('./core/config');
+const geb = require('./core/event-bus');
+
+// PM should be re-purposed for loading external plugins only
 const PM = require('./core/plugins/manager');
+
+// MiningManager gotta go
 const MiningManager = require('./mining/manager');
+
+const LazyMiner = require('./mining/miner/lazy-miner');
 
 const appfoldername = (process.platform !== "win32") ? '.atomminer' : 'AtomMiner';
 const appfolder = path.join(os.homedir(), appfoldername);
@@ -32,8 +39,30 @@ const start = async () => {
 	// load full config
 	Config.load(path.join(appfolder, 'atomminer.conf'));
 
+	// todo: new sw arch (ref: atomminer-core-pool.png, atomminer-core-overview.png, atomminer-core-usb.png)
+	// startup:
+	// init GEB
+	// init essential parts first:
+	//		work-decoder
+	//		pool-manager
+	//		job-scheduler
+	// init MinerStats
+	// init HostStats
+	// init CloudManager
+	// ---- we're effectively up here ----
+	// init USB hotplug/device manager
+	// init TestPools
+	// init AMPools
+	// init UserPools
+	// ---- built-in stuff is loaded ----
+	// inti and start PM
+	// load external plugins
+	
+
 	// register internal plugins
-	if(!PM.register(require('./mining/pool/testpools'))) console.warn('Failed to register TestPools plugin');
+	PM.register(require('./mining/pool/testpools'));
+	// lazy miner for testing. 
+	PM.register(new LazyMiner());
 
 	// todo: load/check plugins
 
@@ -56,7 +85,7 @@ const stop = async () => {
 	// todo: stop IPC
 	// todo: stop API
 	// stop [MM]
-	if(!_mm) tasks.push(_mm.stop());
+	if(_mm) tasks.push(_mm.stop());
 	return Promise.all(tasks);
 }
 

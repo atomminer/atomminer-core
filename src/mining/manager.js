@@ -5,8 +5,7 @@ const PoolMgr = require('./pool/manager');
 
 const Work = require('./work/work');
 
-const Miner = require('./miner/miner');
-const LazyMiner = require('./miner/lazy-miner');
+const checkminer = require('../core/plugins/miner');
 
 /**
  * This class is reponsible for managing managers and connecting/reconnecting who does what.
@@ -20,13 +19,16 @@ class MiningManager extends EventEmitter{
 		// todo: _miners shoud be an object with miner.id being the key
 		this._miners = [];
 		
-		// register local miners
-		this.registerMiner(new LazyMiner()); // DO NOT USE except for testing
+		// register local miners, if any
+		for(var m of PM.get('miner')) this.registerMiner(m);
+		// this.registerMiner(new LazyMiner()); // DO NOT USE except for testing
 		// this.registerMiner(new CPUMiner());	// CPU driver
 		// this.registerMiner(new AMxDMiner());	// AM Debug hardware driver
 		// this.registerMiner(new AM01Miner());	// AM01 driver
 		// this.registerMiner(new AM02Miner()); // AM02 driver
 		// this.registerMiner(new GPUMiner());  // big TODO shouldn't it be done as a plugin? 
+
+		// todo: init mining managers
 
 		// todo: init switchers/schedulers
 
@@ -39,6 +41,7 @@ class MiningManager extends EventEmitter{
 
 		// todo: load list of pools from config or cache...or whatever
 		// todo: load disabled pools list
+		// todo: make sure pools don't have same id
 		const providers = PM.get('pool-provider');
 		for(var pr of providers) {
 			const pools = pr.get();
@@ -55,7 +58,12 @@ class MiningManager extends EventEmitter{
 
 	registerMiner(m) {
 		// todo: check if it has the minimum required fn's instead of checking instance to allow miner-as-a-plugin
-		if(!(m instanceof Miner)) throw new Error('Miner is required');
+		try {
+			checkminer(m)
+		} catch (r) {}
+
+		// todo: check that miners don't have the same id
+
 		// todo: listeners
 		m.on('online', (id) => {});
 		m.on('offline', (id) => {});
