@@ -7,12 +7,10 @@
 const EventEmitter = require('events').EventEmitter;
 
 class EventBus extends EventEmitter {
-  constructor() {
+  constructor(app) {
     super();
+    this.app = app;
   }
 }
 
-/** Event Bus Singleton */
-const bus = new EventBus();
-
-module.exports = bus;
+module.exports = EventBus;

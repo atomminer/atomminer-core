@@ -18,9 +18,9 @@
   },
   "dependencies": {
     "chalk": "^4.1.0",
-    "console-stamp": "^0.2.9",
     "fs-extra": "^9.0.1",
     "stratum-client": "file:../modules/stratum-client",
+    "tracer": "^1.1.4",
     "udp-discovery": "github:atomminer/udp-discovery"
   },
   "devDependencies": {},
