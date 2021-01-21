@@ -47,6 +47,4 @@ class PluginManager {
 	}
 }
 
-const pm = new PluginManager();
-
-module.exports = pm;
+module.exports = PluginManager;

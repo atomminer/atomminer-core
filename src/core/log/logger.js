@@ -77,10 +77,10 @@ class Logger {
         // console output transport   
         (data) => {
           if(this.config.log.terminal === false) return;
-          if(this.config.log.nocolors) return console.log(data.output);
+          if(this.config.log.nocolors) return console.log('\r' + data.output);
           var fn = console.log;
           if(['error','fatal'].indexOf(data.title) != -1) fn = console.error;
-          fn(data.output);
+          fn('\r' + data.output);
         },
         // file transport
         (data) => {
