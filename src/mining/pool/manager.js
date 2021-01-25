@@ -7,6 +7,7 @@
 const loghelper = require('../../core/log/helper')
 const {Stratum} = require('stratum-client');
 const uuid = require('../../utils/uuid');
+const chalk = require('chalk');
 
 class PoolManager {
 	constructor(eventBus, logger = null) {
@@ -31,7 +32,7 @@ class PoolManager {
 		this.geb.on('pool_remove', this.onRemovePool.bind(this));
 
 		// solution/nonce was found for one of the pools
-		this.geb.on('pool_solution', this.onSolution.bind(this));
+		//this.geb.on('pool_solution', this.onSolution.bind(this));
 
 		this.geb.emit('poolmanager_ready', this);
 		this.info('PoolManager started');
@@ -48,32 +49,43 @@ class PoolManager {
 			while(this.pools[p.id] && attempt++ < 10) p.id = uuid();
 			if(this.pools[p.id]) throw new Error(`Cant create unique ID`);
 			const pool = new Stratum(p);
-			if(!pool.priority) pool.priority = p.priority || 0;
+			pool.priority = p.priority || 0;
 			if(pool.id != p.id) pool.id = p.id;
 			this.pools[pool.id] = pool;
 
+			if(!pool.poolname) pool.poolname = () => {
+				return pool.config.name || pool.config.coin || pool.config.url || 'Unknown';
+			}
+
 			// pool listeners
 			pool.on('disconnected', () => { 
-				this.logger.log('stratum', `Pool went offline: ${pool.config.url}`);
+				pool.work = null;
+				pool._coinDiff = null;
+				this.logger.log('stratum', `Pool went offline: ${pool.config.name || pool.config.coin || pool.config.url}`);
 				this.geb.emit('pool_offline', pool);
 			})
 			pool.on('online', () => {
-				this.logger.log('stratum', `Pool became online: ${pool.config.url}`);
+				this.logger.log('stratum', `Pool became online: ${pool.config.name || pool.config.coin || pool.config.url}`);
 				this.geb.emit('pool_online', pool); 
 			});
-			pool.on('error', (e) => { this.logger.log('stratum', `Pool '${pool.id}' error: ${e}`); });
+			pool.on('error', (e) => { this.logger.log('stratum', `Pool '${pool.config.name || pool.config.coin || pool.config.url}' error: ${e}`); });
 			pool.on('diff', (d) => { 
-				this.logger.log('stratum', `New diff ${d} fort ${pool.config.url}`);
+				this.logger.log('stratum', `Pool ${pool.config.name || pool.config.coin || pool.config.url} changed difficulty to ${d}`);
 				this.geb.emit('pool_difficulty', pool); 
 			});
 			pool.on('job', (j) => {
-				this.logger.log('stratum', `New job ${j[0]} fort ${pool.config.url}`);
 				this.geb.emit('pool_new_job', pool); 
 			});
 
 			// todo: get share id and credit it to the miner/stats ?
-			pool.on('accepted', () => { this.geb.emit('pool_accept', pool); });
-			pool.on('rejected', () => { this.geb.emit('pool_reject', pool); });
+			pool.on('accepted', (cmd) => { 
+				this.log(`Share ${chalk.green('Accepted')} from ${pool.poolname()} A/R ${pool.accepted}/${pool.rejected}`); 
+				this.geb.emit('pool_accept', {pool: pool, shareid: cmd.id}); 
+			});
+			pool.on('rejected', (cmd) => {
+				this.log(`Share ${chalk.red('Rejected')} from ${pool.poolname()}: ${cmd.error[1]}`); 
+				this.geb.emit('pool_reject', {pool: pool, shareid: cmd.id}); 
+			});
 
 			if(!pool.config.disabled) pool.connect();
 		}
@@ -93,7 +105,7 @@ class PoolManager {
 	stop() {
 		this._active = false;
 		for(var p of Object.values(this.pools)) p.disconnect();
-		this.info('Stopped')
+		this.info('Stopped');
 	}
 
 	/** Pool provider has registered with the system */
@@ -155,9 +167,9 @@ class PoolManager {
 		poolConfig && this._addPool(poolConfig);
 	}
 	/** Add another pool to the system */
-	onSolution(unk) {
-		this.debug('Solution found. Should submit');
-	}
+	// onSolution(unk) {
+	// 	this.debug('Solution found. Should submit');
+	// }
 }
 
 module.exports = PoolManager;

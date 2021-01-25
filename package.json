@@ -4,9 +4,10 @@
   "description": "AtomMiner core miner. ",
   "main": "index.js",
   "engines": {
-    "node": ">=10"
+    "node": ">=12"
   },
   "scripts": {
+    "build": "browserify index.js --node |  terser --compress --mangle > dist/atomminer-core.min.js",
     "test": "jest --coverage && codecov",
     "docs": "jsdoc2md-treegen"
   },
@@ -21,7 +22,8 @@
     "fs-extra": "^9.0.1",
     "stratum-client": "file:../modules/stratum-client",
     "tracer": "^1.1.4",
-    "udp-discovery": "github:atomminer/udp-discovery"
+    "udp-discovery": "github:atomminer/udp-discovery",
+    "usb": "file:../modules/node-usb"
   },
   "devDependencies": {},
   "jest": {

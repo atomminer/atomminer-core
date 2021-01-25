@@ -20,6 +20,9 @@ const SchedulerPriority = require('./mining/scheduler/priority');
 // PM should be re-purposed for loading external plugins only
 const PluginManager = require('./core/plugins/manager');
 
+const USB = require('./core/usb/usb');
+const AM01Driver = require('./core/usb/driver/am01');
+
 //const LazyMiner = require('./mining/miner/lazy-miner');
 
 const appfoldername = process.env.DATADIR ? process.env.DATADIR : ((process.platform !== "win32") ? '.atomminer' : 'AtomMiner');
@@ -59,6 +62,7 @@ class App {
 		this.logger = null;
 		this.appfolder = path.join(os.homedir(), appfoldername);
 		this.poolProviders = [];
+		this.drivers = [];
 		this.services = {};
 
 		this.testconsole = true;
@@ -83,12 +87,12 @@ class App {
 		process.on('uncaughtException', err => {
 			_app.fatal(err.message);
 			console.error(err);
-			process.exit(255);
+			process.abort();
 		});
 		process.on('unhandledRejection', err => {
 			_app.fatal(err.message);
 			console.error(err);
-			process.exit(255);
+			process.abort();
 		});
 
 		const cpus = os.cpus();
@@ -96,6 +100,7 @@ class App {
 ---
   Running on   : ${os.release()}
   OS           : ${os.type} ${os.arch()}
+  node/V8      : ${process.versions['node'] || 'Unknown'} / ${process.versions['v8'] || 'Unknown'}
   Physical RAM : ${fmt.size(process.memoryUsage().heapTotal)}b / ${fmt.size(os.totalmem())}b / ${fmt.size(os.freemem())}b
   CPU          : ${cpus.length}x${(cpus[0].speed/1000).toFixed(2)}GHz ${os.loadavg().map(v => v.toFixed(2)).join('/')}
   App Folder   : ${_app.appfolder}
@@ -123,12 +128,16 @@ class App {
 		// must have modules
 		_app.workDecoder = new WorkDecoder(_app.geb, _app.logger);
 		_app.poolManager = new PoolManager(_app.geb, _app.logger);
+		// todo: we can have multiple schedulers
 		_app.defaultScheduler = new SchedulerPriority(_app.geb, _app.logger);
+		_app.defaultScheduler.default = true;
 
 		// pool providers
 		_app.poolProviders.push(new TestPools(_app.geb, _app.logger));
 
-		// todo: start USB subsystem
+		_app.drivers.push(new AM01Driver(_app.geb, _app.logger));
+		//_app.drivers.push(new AM02Driver(_app.geb, _app.logger));
+		_app.usb = new USB(_app.geb, _app.logger);
 
 		// plugins
 		_app.pluginManager = new PluginManager(_app);
@@ -160,6 +169,12 @@ const start = async () => {
 const stop = async () => {
 	_app.info(`Stopping ${pkg.name} ${pkg.version}...`);
 	_app.geb.emit('app_stop', _app);
+	// should create a minidump?
+	setTimeout(() => {
+		_app.info(`${pkg.name} ${pkg.version} failed to stop within 1 second. Terminating`);
+		process.abort();
+    //process.exit(0)
+  }, 1000).unref();
 }
 
 /** Return app object */

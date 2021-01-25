@@ -5,7 +5,7 @@
 
 const extend = (obj, tag = null, logger = null) => {
 	if(!obj) return
-	tag = tag || obj.constructor.name;
+	tag = tag || obj._logtag || obj.constructor.name;
 
 	logger = logger || obj.logger;
 

@@ -8,6 +8,7 @@
 const Merkle = require('../crypto/merkle');
 const diff = require('../../utils/diff');
 const hex = require('../../utils/hex');
+const uuid = require('../../utils/uuid');
 
 const RootFn = {
 	'keccak': Merkle.single,
@@ -97,7 +98,7 @@ class Work {
 		this._cacheSize = 1; 			// by default, hold 1 work active and refill when it is consumed.
 
 		// debug
-		this._printWorkStats = true; 			// print debug stats
+		this._printWorkStats = false; 		// print debug stats
 		this._printTarget = false;				// print new target 
 		this._printScheduleWork = true;		// print when work is being scheduled
 
@@ -161,6 +162,7 @@ class Work {
 			// debug info
 			if(this._printWorkStats) {
 				console.debug(`-----------------  Updating new job counters -----------------`);
+				console.debug(`Pool    : ${this._pool.poolname()}`);
 				console.debug(`Lifespan: ${(this._avglifespan/1000).toFixed(3)}s`);
 				console.debug(`Cache   : ${this._cacheSize}`);
 				console.debug(`Consumed: ${this._worksConsumed}`);
@@ -215,6 +217,8 @@ class Work {
 			throw new Error('not implemented');
 		}
 		else {
+			this._xnonce2 = (this._xnonce2 + 1) >>> 0;
+
 			var coinbase = this._coinbase1;
 			coinbase += this._xnonce;
 			coinbase += hex.hex32(this._xnonce2); // again, assuming that _xnonce2 is 32bit
@@ -222,16 +226,15 @@ class Work {
 
 			const tree = Merkle.tree(coinbase, this._leafs, RootFn[this._pool.config.algo]);
 
-			this._xnonce2 = (this._xnonce2 + 1) >>> 0;
-
 			work += this._version;
 			work += this._prevhash;
-			work += tree;
+			work += Buffer.from(tree, 'hex').swap32().toString('hex');
 			work += this._time;
 			work += this._bits;
 			//work += '00000000'; // <-- 32bit nonce should be here
 			work = Buffer.from(work, 'hex').swap32().toString('hex');
 			work = {
+				id: uuid(),
 				poolid: this._pool.id,
 				jobid: this._jobID,
 				height: this._height,
