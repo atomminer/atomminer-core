@@ -5,3 +5,7 @@
 AtomMiner cli miner 1.1.0 
 
 work-in-progress
+
+##### Coding rules
+
+most internal classes can be saved into settings. It instance variable is not supposed to end up in the settings/config file, its name should begin with `_` (underscore).

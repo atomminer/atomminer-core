@@ -15,11 +15,12 @@
  */
 const chalk = require('chalk');
 const loghelper = require('../../core/log/helper')
+const RR = require('./helpers/rr');
 
-class SchedulerPriority {
+class Priority {
 	constructor(eventBus, logger = null) {
 		this._logtag = 'sched-priority';
-		if(!eventBus) throw new Error('WorkDecoder requires even bus');
+		if(!eventBus) throw new Error('Priority scheduler requires even bus');
 		this.geb = eventBus;
 		this.logger = logger;
 		loghelper(this);
@@ -30,6 +31,8 @@ class SchedulerPriority {
 		this.miners = {};
 		this.pools = {};
 		this.minerpool = {};
+
+		this.rr = new RR();
 
 		// active online pools we're currently working with
 		this._activePools = [];
@@ -51,12 +54,16 @@ class SchedulerPriority {
 		this.geb.emit('scheduler_ready', this);
 	}
 
+	get id() { return 'b2f1c0e9c0484437884cd831c4ff2ea2'; }
+	get name() { return 'Priority'; }
+	get shortname() { return 'priority'; };
+
 	/** Miner became online */
 	onMinerOnline(dev) {
 		// we only want this miner if 
 		// 1. miner it is set to use sched-priority 
 		// 2. miner doesn't have scheduler set and we're default scheduler
-		if(dev.scheduler === 'sched-priority' || (this.default && !dev.scheduler)) {
+		if(dev.scheduler === this.shortname || (this.default && !dev.scheduler)) {
 			this.miners[dev.id] = dev;
 			this.log(`${dev.name || 'Miner'} ${dev.serial} is attached to Priority scheduler`);
 			// todo: should we notify other schedulers to release this miner here?
@@ -75,7 +82,6 @@ class SchedulerPriority {
 		this.pools[pool.id] = pool;
 		setImmediate(() => {
 			this.updateCurrentPools();
-			// todo: if miner(s) should be switched to this pool
 		});
 	}
 	/** Pool went offline event */
@@ -83,7 +89,6 @@ class SchedulerPriority {
 		if(this.pools[pool.id]) delete this.pools[pool.id];
 		setImmediate(() => {
 			this.updateCurrentPools();
-			// todo: switch miner(s) connected to that pool
 		});
 	}
 	/** Pool changed difficulty event */
@@ -108,7 +113,7 @@ class SchedulerPriority {
 	updateCurrentPools() {
 		// for instance, we have 3 pools with prio: [0, 1, 1]
 		// if 0 goes offline, we're lowering prio to 1 and starting to alternate between prio 1 pools
-		// and switching back to 0 when it is back online
+		// i.e multiple pools with the same prio are treated like round-robin scheduler
 		var pools = Object.values(this.pools).filter(p => p.online).sort((a,b) => a.config.priority - b.config.priority);
 		var pool = null;
 		for(var p of pools) {
@@ -117,8 +122,14 @@ class SchedulerPriority {
 				break;
 			}
 		}
-		if(!pool) return ;
-		this._activePools = pools.filter(p => p.config.priority == pool.config.priority);
+		if(!pool) return this.rr.updatepools();
+		this._activePools = pools.filter(p => (p.config.priority == pool.config.priority && p.online && p.work));
+		this.rr.updatepools(this._activePools.map(p => p.id));
+		for(var m of this.rr.unassigned()) {
+			const poolid = this.rr.assign(m);
+			if(!poolid) continue;
+			this.dispatchWork(this.miners[m], this.pools[poolid].work);
+		}
 	}
 
 	dispatchWork(miner, work) {
@@ -143,7 +154,7 @@ class SchedulerPriority {
 				if(this._activePools[i].id == this.minerpool[m.id]) break;
 			}
 			if(++i >= this._activePools.length) i = 0;
-			this.debug(chalk.magentaBright(`Switching miner ${m.serial || m.id} to ${this._activePools[i].poolname()}`));
+			this.log(`Switching miner ${m.name || ''} ${chalk.cyan(m.serial || m.id)} to ${chalk.magentaBright(this._activePools[i].poolname())}`);
 			this.minerpool[m.id] = this._activePools[i].id;
 		}
 	}
@@ -154,7 +165,7 @@ class SchedulerPriority {
 			if(!m.idle) continue;
 			if(!this.minerpool[m.id]) this.minerpool[m.id] = this._activePools[0].id;
 			const pool = this.pools[this.minerpool[m.id]];
-			if(!pool.work) return;
+			if(!(pool && pool.work)) return;
 			const w = pool.work.get();
 			this.dispatchWork(m, w);
 		}
@@ -162,6 +173,7 @@ class SchedulerPriority {
 
 	/** Miner has a solutions */
 	onMinerSolution(work) {
+		if(!this.miners[work.minerid]) return;
 		if(!work) return this.warn('Caught undefined solution');
 		const pool = this.pools[work.poolid]
 		if(!(pool && pool.online)) return this.warn(`Solution found for job ${work.jobid} when pool is offline`);
@@ -174,7 +186,9 @@ class SchedulerPriority {
 	}
 	/** Miner is idle */
 	onMinerIdle(miner) {
-		this.debug('onMinerIdle');
+		if(!miner) return;
+		if(!this.miners[miner.id]) return;
+		//this.debug('onMinerIdle');
 		process.nextTick(() => {
 			this.rotateIdleMiners();
 			this.restartIdleMiners();
@@ -223,4 +237,4 @@ class SchedulerPriority {
 	}
 }
 
-module.exports = SchedulerPriority;
+module.exports = Priority;

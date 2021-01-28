@@ -77,6 +77,18 @@ class Logger {
         // console output transport   
         (data) => {
           if(this.config.log.terminal === false) return;
+          if(!this.config.log.__ignore_exclude && this.config.log.exclude && Array.isArray(this.config.log.exclude)) {
+            for(var p of this.config.log.exclude) {
+              try {
+                const path = data.rawtag + '/' + data.title;
+                if(path.match(new RegExp(p, "i"))) return;
+              }
+              catch(e) {
+                console.error(chalk.bgRed.black('config.log.exclude must be valid RegEx. Ignoring exclude path.'));
+                this.config.log.__ignore_exclude = true;
+              }
+            }
+          }
           if(this.config.log.nocolors) return console.log('\r' + data.output);
           var fn = console.log;
           if(['error','fatal'].indexOf(data.title) != -1) fn = console.error;
@@ -128,6 +140,7 @@ class Logger {
         if(data.timestamp) data.timestamp = (this.config.log.timestampopen || '') + data.timestamp + (this.config.log.timestampclose || '');
         if(this.config.log.nocolors || data.title === 'raw') return;
         data.timestamp = colorize(data.timestamp, this.config.log.colorize.timestamp || defaultColors.timestamp);
+        data.rawtag = rawtag;
         data.tag = colorize(data.tag, tagcolor(rawtag, this.config));
         if(data.args.length == 1) data.args[0] = colorize(data.args[0], this.config.log.colorize[data.title] || defaultColors[data.title]);
       }

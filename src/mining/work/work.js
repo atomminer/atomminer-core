@@ -100,7 +100,7 @@ class Work {
 		// debug
 		this._printWorkStats = false; 		// print debug stats
 		this._printTarget = false;				// print new target 
-		this._printScheduleWork = true;		// print when work is being scheduled
+		this._printScheduleWork = false;	// print when work is being scheduled
 
 		this.update();
 	}

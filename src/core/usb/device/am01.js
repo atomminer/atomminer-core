@@ -26,7 +26,7 @@ const keccak = require('../../../mining/crypto/keccak');
 // 	LIBUSB_ERROR_OTHER         = -99,
 // };
 
-class AM01 {
+class AM01Device {
 	constructor(dev, eventBus, logger) {
 		if(!eventBus) throw new Error('AM01Device requires even bus');
 		this.geb = eventBus;
@@ -189,4 +189,4 @@ class AM01 {
 	}
 }
 
-module.exports = AM01;
+module.exports = AM01Device;

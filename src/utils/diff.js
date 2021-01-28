@@ -35,7 +35,7 @@ const diffToTarget = (diff) => {
 	for (; k > 0 && diff > 1.0; k--) {
 		diff /= 4294967296.0;
 	}
-	var m = BigInt(4.294901760e+9 / diff)
+	var m = BigInt(Math.ceil(4.294901760e+9 / diff));
 	buf.writeUInt32LE(Number(0xffffffffn & m) >>> 0, k << 2);
 	buf.writeUInt32LE(Number(m >> 32n) >>> 0, 4 + (k << 2));
 	return buf.toString('hex');
@@ -70,7 +70,7 @@ const diffToTarget64 = (diff) => {
 	var mod = 0x00ffff0000000n;
 	var mult = 4096*diff; //(0x10 << 8)*diff;
 	if(mult < 1) return mod;
-	return mod / BigInt(mult);
+	return mod / BigInt(Math.ceil(mult));
 }
 
 /**
